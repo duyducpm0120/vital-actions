@@ -21,6 +21,9 @@ class BotController {
         // Send command
         this.bot.onText(/\/send (.+)/, this.handleSend.bind(this));
 
+        // Test channel command
+        this.bot.onText(/\/testchannel/, this.handleTestChannel.bind(this));
+
         // Handle any text message
         this.bot.on('message', this.handleMessage.bind(this));
     }
@@ -82,6 +85,23 @@ Use /help to see available commands.
             : '❌ Failed to send message to channel.';
 
         await botService.sendMessage(chatId, response);
+    }
+
+    async handleTestChannel(msg) {
+        const chatId = msg.chat.id;
+        const testMessage = `<b>Test message to channel</b>\nChannel ID: ${botService.channelId}`;
+
+        try {
+            const success = await botService.sendToChannel(testMessage);
+            const response = success
+                ? '✅ Test message sent to channel successfully!'
+                : '❌ Failed to send test message to channel.';
+
+            await botService.sendMessage(chatId, response);
+        } catch (error) {
+            console.error('Error in test channel:', error);
+            await botService.sendMessage(chatId, `❌ Error: ${error.message}`);
+        }
     }
 
     async handleMessage(msg) {

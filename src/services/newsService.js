@@ -338,11 +338,6 @@ Hãy tạo báo cáo theo format sau (NHỚ chỉ sử dụng các thẻ HTML đ
 - Chiến lược tích lũy tài sản
 - Kế hoạch tài chính cá nhân
 
-<b>3. Phát triển bản thân:</b>
-- Kỹ năng cần trang bị
-- Cơ hội nghề nghiệp mới
-- Hướng phát triển sự nghiệp
-
 Lưu ý quan trọng:
 - BẮT BUỘC chỉ sử dụng các thẻ HTML được Telegram hỗ trợ (<b>, <i>, <u>, <a>, <code>, <pre>)
 - KHÔNG sử dụng bất kỳ thẻ HTML nào khác

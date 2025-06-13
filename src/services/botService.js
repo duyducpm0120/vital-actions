@@ -189,19 +189,30 @@ class BotService {
     sanitizeHtml(html) {
         if (!html) return '';
 
-        // Chuyển đổi các heading tags thành bold
+        // Escape các ký tự đặc biệt
+        const escapeHtml = (text) => {
+            return text
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        };
+
+        // Xử lý các thẻ HTML được hỗ trợ
         let sanitized = html
+            // Chuyển đổi các heading tags thành bold
             .replace(/<h[1-6][^>]*>(.*?)<\/h[1-6]>/gi, '<b>$1</b>\n')
-            // Chuyển đổi các tags không được hỗ trợ thành text thường
-            .replace(/<[^>]+>/g, (match) => {
-                // Giữ lại các tags được hỗ trợ
-                if (match.match(/<[biu]|<\/[biu]>/)) return match;
-                if (match.match(/<a[^>]*>|<\/a>/)) return match;
-                if (match.match(/<code>|<\/code>/)) return match;
-                if (match.match(/<pre>|<\/pre>/)) return match;
-                // Loại bỏ các tags khác
-                return '';
-            })
+            // Xử lý các thẻ được hỗ trợ
+            .replace(/<b>(.*?)<\/b>/gi, (match, content) => `<b>${escapeHtml(content)}</b>`)
+            .replace(/<i>(.*?)<\/i>/gi, (match, content) => `<i>${escapeHtml(content)}</i>`)
+            .replace(/<u>(.*?)<\/u>/gi, (match, content) => `<u>${escapeHtml(content)}</u>`)
+            .replace(/<a\s+(?:[^>]*?\s+)?href="([^"]*)"[^>]*>(.*?)<\/a>/gi, (match, url, content) =>
+                `<a href="${escapeHtml(url)}">${escapeHtml(content)}</a>`)
+            .replace(/<code>(.*?)<\/code>/gi, (match, content) => `<code>${escapeHtml(content)}</code>`)
+            .replace(/<pre>(.*?)<\/pre>/gi, (match, content) => `<pre>${escapeHtml(content)}</pre>`)
+            // Loại bỏ các thẻ không được hỗ trợ
+            .replace(/<[^>]+>/g, '')
             // Xử lý khoảng trắng
             .replace(/\n{3,}/g, '\n\n')
             .trim();

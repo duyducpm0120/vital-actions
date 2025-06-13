@@ -22,11 +22,11 @@ class NewsController {
 
             // Format message
             const message = `
-📊 Báo cáo tin tức ngày ${moment().format('DD/MM/YYYY')}
+<b>📊 Báo cáo tin tức ngày ${moment().format('DD/MM/YYYY')}</b>
 
 ${analysis}
 
-#VitalActions #DailyReport
+<b>#VitalActions #DailyReport</b>
             `;
 
             // Send to channel
