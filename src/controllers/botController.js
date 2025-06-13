@@ -1,5 +1,6 @@
 const moment = require('moment');
 const botService = require('../services/botService');
+const grokService = require('../services/grokService');
 
 class BotController {
     constructor() {
@@ -19,6 +20,9 @@ class BotController {
 
         // Send command
         this.bot.onText(/\/send (.+)/, this.handleSend.bind(this));
+
+        // Grok command
+        this.bot.onText(/\/grok (.+)/, this.handleGrok.bind(this));
 
         // Handle any text message
         this.bot.on('message', this.handleMessage.bind(this));
@@ -49,6 +53,7 @@ Use /help to see available commands.
 /help - Show this help message
 /status - Check bot status
 /send [message] - Send message to channel (admin only)
+/grok [prompt] - Test Grok API
 
 📌 Features:
 • Real-time political updates
@@ -81,6 +86,25 @@ Use /help to see available commands.
             : '❌ Failed to send message to channel.';
 
         await botService.sendMessage(chatId, response);
+    }
+
+    async handleGrok(msg, match) {
+        const chatId = msg.chat.id;
+        const prompt = match[1];
+
+        try {
+            // Send "typing" action
+            await this.bot.sendChatAction(chatId, 'typing');
+
+            // Get response from Grok
+            const response = await grokService.getSimpleResponse(prompt);
+
+            // Send response back to user
+            await botService.sendMessage(chatId, response);
+        } catch (error) {
+            console.error('Error in handleGrok:', error);
+            await botService.sendMessage(chatId, '❌ Sorry, I encountered an error while processing your request.');
+        }
     }
 
     async handleMessage(msg) {

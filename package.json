@@ -2,21 +2,30 @@
   "name": "vital-actions",
   "version": "1.0.0",
   "description": "A simple NodeJS application synthesizing information and providing vital actions &amp; mindset about political and financial issues",
-  "main": "src/index.js",
+  "main": "src/server.js",
   "scripts": {
-    "start": "node src/index.js",
-    "dev": "nodemon src/index.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node src/server.js",
+    "dev": "nodemon src/server.js",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "docker:build": "docker build -t vital-actions .",
+    "docker:run": "docker run -d --name vital-actions-bot -p 3000:3000 --env-file .env vital-actions",
+    "docker:compose": "docker-compose up -d",
+    "docker:compose:build": "docker-compose up -d --build",
+    "docker:logs": "docker logs -f vital-actions-bot",
+    "docker:stop": "docker stop vital-actions-bot && docker rm vital-actions-bot",
+    "docker:clean": "docker system prune -f"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
     "axios": "^1.9.0",
+    "cheerio": "^1.0.0-rc.12",
     "cors": "^2.8.5",
     "dotenv": "^16.5.0",
     "express": "^5.1.0",
     "moment": "^2.30.1",
+    "node-cron": "^3.0.3",
     "node-telegram-bot-api": "^0.66.0"
   },
   "devDependencies": {

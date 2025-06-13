@@ -1,5 +1,5 @@
-# Use Node.js LTS version
-FROM node:20-alpine
+# Build stage
+FROM node:20-alpine AS builder
 
 # Create app directory
 WORKDIR /usr/src/app
@@ -8,16 +8,39 @@ WORKDIR /usr/src/app
 COPY package*.json ./
 
 # Install dependencies
-RUN npm install
+RUN npm ci
 
 # Copy source code
 COPY . .
 
-# Create .env file from example if it doesn't exist
-RUN if [ ! -f .env ]; then cp .env.example .env; fi
+# Production stage
+FROM node:20-alpine
 
-# Expose port if needed (for future use)
-# EXPOSE 3000
+# Create app directory
+WORKDIR /usr/src/app
 
-# Start the bot
+# Copy package files and install production dependencies
+COPY package*.json ./
+RUN npm ci --only=production
+
+# Copy built application from builder stage
+COPY --from=builder /usr/src/app/src ./src
+
+# Create .env file if it doesn't exist
+RUN touch .env
+
+# Set timezone to Asia/Ho_Chi_Minh
+RUN apk add --no-cache tzdata && \
+    cp /usr/share/zoneinfo/Asia/Ho_Chi_Minh /etc/localtime && \
+    echo "Asia/Ho_Chi_Minh" > /etc/timezone && \
+    apk del tzdata
+
+# Create non-root user
+RUN addgroup -S appgroup && adduser -S appuser -G appgroup
+USER appuser
+
+# Expose port
+EXPOSE 3000
+
+# Start the application
 CMD ["npm", "start"] 
