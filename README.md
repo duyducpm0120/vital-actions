@@ -18,11 +18,21 @@ A Telegram bot that provides vital information and insights about political deve
 
 ## Environment Variables
 
-Create a `.env` file in the root directory with the following variables:
+Create a `.env` file in the root directory with the .env.example template:
 
 ```env
-TELEGRAM_BOT_TOKEN=your_bot_token_here
-TELEGRAM_CHANNEL_ID=your_channel_id_here
+# Telegram Configuration
+TELEGRAM_BOT_TOKEN=your-bot-token
+CHANNEL_ID=your-channel
+
+# AI API Configuration
+GROK_API_KEY=your-grok-api-key
+GPT_API_KEY=your-gpt-api-key
+GEMINI_API_KEY=your-gemini-api-key
+
+# Application Configuration
+PORT=3000
+NODE_ENV=development
 ```
 
 ## Project Structure
