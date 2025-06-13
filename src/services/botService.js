@@ -1,10 +1,12 @@
 const TelegramBot = require('node-telegram-bot-api');
 const moment = require('moment');
 const { config } = require('../config/config');
+const { SocksProxyAgent } = require('socks-proxy-agent');
 
 class BotService {
     constructor() {
-        this.initializeBot();
+        this.bot = null;
+        this.initializationPromise = this.initializeBot();
         this.channelId = config.telegram.channelId;
     }
 
@@ -117,16 +119,18 @@ class BotService {
         return messages;
     }
 
-    initializeBot() {
+    async initializeBot() {
         try {
+            // Tạo SOCKS5 proxy agent
+            const proxyUrl = 'socks5://admin:admin@socks5:1080';
+            const agent = new SocksProxyAgent(proxyUrl);
+
             // Khởi tạo bot với long polling
             this.bot = new TelegramBot(config.telegram.token, {
-                polling: {
-                    interval: 1000,
-                    autoStart: false,
-                    params: {
-                        timeout: 30
-                    }
+                polling: true,
+                request: {
+                    agent: agent,
+                    timeout: 30000
                 }
             });
 
@@ -145,22 +149,16 @@ class BotService {
                 console.error('Bot error:', error.message);
             });
 
-            // Kiểm tra kết nối và bắt đầu polling
-            this.bot.getMe()
-                .then(botInfo => {
-                    console.log('🤖 Bot connected successfully:', botInfo.username);
-                    return this.startPolling();
-                })
-                .catch(error => {
-                    console.error('Failed to connect bot:', error.message);
-                    // Thử kết nối lại sau 5 giây
-                    setTimeout(() => this.initializeBot(), 5000);
-                });
+            // Kiểm tra kết nối
+            const botInfo = await this.bot.getMe();
+            console.log('🤖 Bot connected successfully:', botInfo.username);
+            return this.bot;
 
         } catch (error) {
             console.error('Error initializing bot:', error.message);
             // Thử khởi động lại sau 5 giây
             setTimeout(() => this.initializeBot(), 5000);
+            throw error;
         }
     }
 
@@ -254,7 +252,10 @@ class BotService {
         }
     }
 
-    getBot() {
+    async getBot() {
+        if (!this.bot) {
+            await this.initializationPromise;
+        }
         return this.bot;
     }
 }

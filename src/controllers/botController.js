@@ -4,8 +4,19 @@ const botService = require('../services/botService');
 
 class BotController {
     constructor() {
-        this.bot = botService.getBot();
-        this.setupCommands();
+        this.bot = null;
+        this.initialize();
+    }
+
+    async initialize() {
+        try {
+            this.bot = await botService.getBot();
+            this.setupCommands();
+        } catch (error) {
+            console.error('Failed to initialize bot controller:', error.message);
+            // Thử khởi tạo lại sau 5 giây
+            setTimeout(() => this.initialize(), 5000);
+        }
     }
 
     setupCommands() {

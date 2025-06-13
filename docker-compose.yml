@@ -15,9 +15,27 @@ services:
       - TZ=Asia/Ho_Chi_Minh
     volumes:
       - ./logs:/usr/src/app/logs
+    depends_on:
+      - socks5
     healthcheck:
       test: ["CMD", "wget", "--spider", "http://localhost:3000/health"]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 40s
+    networks:
+      - botnet
+
+  socks5:
+    image: serjs/go-socks5-proxy
+    container_name: vital-actions-socks5
+    restart: unless-stopped
+    ports:
+      - "1080:1080"
+    command: -p 1080 -u admin -P admin
+    networks:
+      - botnet
+
+networks:
+  botnet:
+    driver: bridge
