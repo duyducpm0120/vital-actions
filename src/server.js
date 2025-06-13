@@ -3,6 +3,7 @@ const cron = require('node-cron');
 const { validateConfig } = require('./config/config');
 const newsController = require('./controllers/newsController');
 const botController = require('./controllers/botController');
+const { providers } = require('./services/aiService');
 
 // Create Express app
 const app = express();
@@ -22,11 +23,15 @@ app.get('/health', (req, res) => {
 // Route to manually trigger news processing
 app.post('/api/news/process', async (req, res) => {
     try {
-        console.log('🔄 Manually triggering news processing...');
-        await newsController.processDailyNews();
+        const provider = req.query.provider || 'gemini'; // Lấy provider từ query param, mặc định là gemini
+        console.log(`🔄 Manually triggering news processing with provider: ${provider}...`);
+
+        await newsController.processDailyNews({ provider });
+
         res.json({
             status: 'success',
             message: 'News processing completed successfully',
+            provider,
             timestamp: new Date().toISOString()
         });
     } catch (error) {

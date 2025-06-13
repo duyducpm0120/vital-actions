@@ -8,6 +8,115 @@ class BotService {
         this.channelId = config.telegram.channelId;
     }
 
+    // Hàm escape các ký tự đặc biệt cho MarkdownV2
+    escapeMarkdown(text) {
+        if (!text) return '';
+        // Escape các ký tự đặc biệt của MarkdownV2
+        return text.replace(/[_*[\]()~`>#+=|{}.!-]/g, '\\$&');
+    }
+
+    // Hàm format tin nhắn với MarkdownV2
+    formatMessage(message) {
+        if (!message) return '';
+
+        // Tách message thành các dòng
+        const lines = message.split('\n');
+        const formattedLines = lines.map(line => {
+            // Giữ nguyên các emoji
+            let formatted = line;
+
+            // Xử lý các tiêu đề (dòng bắt đầu bằng #)
+            if (line.trim().startsWith('#')) {
+                const level = line.match(/^#+/)[0].length;
+                const content = line.replace(/^#+\s*/, '');
+                formatted = '*'.repeat(level) + ' ' + this.escapeMarkdown(content);
+            }
+            // Xử lý các dòng có bullet points
+            else if (line.trim().startsWith('•')) {
+                const content = line.replace(/^•\s*/, '');
+                formatted = '• ' + this.escapeMarkdown(content);
+            }
+            // Xử lý các dòng có số thứ tự
+            else if (line.trim().match(/^\d+\./)) {
+                const [number, content] = line.split('.');
+                formatted = number + '\\. ' + this.escapeMarkdown(content.trim());
+            }
+            // Xử lý các dòng có emoji
+            else if (line.trim().match(/^[a-zA-Z0-9]/)) {
+                const emoji = line.match(/^[a-zA-Z0-9]+/)[0];
+                const content = line.replace(/^[a-zA-Z0-9]+\s*/, '');
+                formatted = emoji + ' ' + this.escapeMarkdown(content);
+            }
+            // Xử lý các dòng có dấu * (in đậm)
+            else if (line.includes('*')) {
+                formatted = line.replace(/\*([^*]+)\*/g, (match, content) => {
+                    // Escape dấu chấm trong nội dung trước
+                    const escapedContent = content.replace(/\./g, '\\.');
+                    return '*' + this.escapeMarkdown(escapedContent) + '*';
+                });
+            }
+            // Xử lý các dòng có dấu _ (in nghiêng)
+            else if (line.includes('_')) {
+                formatted = line.replace(/_([^_]+)_/g, (match, content) => {
+                    // Escape dấu chấm trong nội dung trước
+                    const escapedContent = content.replace(/\./g, '\\.');
+                    return '_' + this.escapeMarkdown(escapedContent) + '_';
+                });
+            }
+            // Các dòng khác
+            else {
+                // Escape tất cả dấu chấm trong nội dung
+                formatted = line.replace(/\./g, '\\.');
+                // Escape các ký tự đặc biệt khác
+                formatted = this.escapeMarkdown(formatted);
+            }
+
+            return formatted;
+        });
+
+        return formattedLines.join('\n');
+    }
+
+    // Hàm chia nhỏ tin nhắn dài
+    splitMessage(message, maxLength = 4000) {
+        if (!message || message.length <= maxLength) return [message];
+
+        const messages = [];
+        let currentMessage = '';
+        const lines = message.split('\n');
+
+        for (const line of lines) {
+            // Nếu thêm dòng này vượt quá giới hạn
+            if (currentMessage.length + line.length + 1 > maxLength) {
+                // Nếu dòng hiện tại không rỗng, thêm vào mảng
+                if (currentMessage) {
+                    messages.push(currentMessage);
+                    currentMessage = '';
+                }
+                // Nếu dòng quá dài, chia nhỏ nó
+                if (line.length > maxLength) {
+                    let remainingLine = line;
+                    while (remainingLine.length > 0) {
+                        messages.push(remainingLine.substring(0, maxLength));
+                        remainingLine = remainingLine.substring(maxLength);
+                    }
+                } else {
+                    currentMessage = line;
+                }
+            } else {
+                // Thêm dòng vào tin nhắn hiện tại
+                currentMessage += (currentMessage ? '\n' : '') + line;
+            }
+        }
+
+        // Thêm phần còn lại
+        if (currentMessage) {
+            messages.push(currentMessage);
+        }
+
+        return messages;
+    }
+
     initializeBot() {
         try {
             // Khởi tạo bot với long polling
@@ -76,12 +185,40 @@ class BotService {
         });
     }
 
+    // Hàm xử lý HTML để chỉ giữ lại các tags được hỗ trợ
+    sanitizeHtml(html) {
+        if (!html) return '';
+
+        // Chuyển đổi các heading tags thành bold
+        let sanitized = html
+            .replace(/<h[1-6][^>]*>(.*?)<\/h[1-6]>/gi, '<b>$1</b>\n')
+            // Chuyển đổi các tags không được hỗ trợ thành text thường
+            .replace(/<[^>]+>/g, (match) => {
+                // Giữ lại các tags được hỗ trợ
+                if (match.match(/<[biu]|<\/[biu]>/)) return match;
+                if (match.match(/<a[^>]*>|<\/a>/)) return match;
+                if (match.match(/<code>|<\/code>/)) return match;
+                if (match.match(/<pre>|<\/pre>/)) return match;
+                // Loại bỏ các tags khác
+                return '';
+            })
+            // Xử lý khoảng trắng
+            .replace(/\n{3,}/g, '\n\n')
+            .trim();
+
+        return sanitized;
+    }
+
     async sendMessage(chatId, message) {
         try {
-            await this.bot.sendMessage(chatId, message, {
-                parse_mode: 'HTML',
-                disable_web_page_preview: true
-            });
+            const messages = this.splitMessage(message);
+            for (const msg of messages) {
+                const sanitizedMessage = this.sanitizeHtml(msg);
+                await this.bot.sendMessage(chatId, sanitizedMessage, {
+                    parse_mode: 'HTML',
+                    disable_web_page_preview: true
+                });
+            }
             return true;
         } catch (error) {
             console.error('Error sending message:', error.message);
@@ -91,10 +228,14 @@ class BotService {
 
     async sendToChannel(message) {
         try {
-            await this.bot.sendMessage(this.channelId, message, {
-                parse_mode: 'HTML',
-                disable_web_page_preview: true
-            });
+            const messages = this.splitMessage(message);
+            for (const msg of messages) {
+                const sanitizedMessage = this.sanitizeHtml(msg);
+                await this.bot.sendMessage(this.channelId, sanitizedMessage, {
+                    parse_mode: 'HTML',
+                    disable_web_page_preview: true
+                });
+            }
             return true;
         } catch (error) {
             console.error('Error sending message to channel:', error.message);

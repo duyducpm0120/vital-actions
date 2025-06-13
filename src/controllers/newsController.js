@@ -3,7 +3,7 @@ const botService = require('../services/botService');
 const moment = require('moment');
 
 class NewsController {
-    async processDailyNews() {
+    async processDailyNews(options = {}) {
         try {
             console.log('🔄 Starting daily news processing...');
 
@@ -16,13 +16,13 @@ class NewsController {
                 return;
             }
 
-            // Analyze news using Grok
-            const analysis = await newsService.analyzeNews(news);
+            // Analyze news using AI
+            const analysis = await newsService.analyzeNews(news, options);
             console.log('✅ News analysis completed');
 
             // Format message
             const message = `
-📊 Báo cáo tin tức ngày ${moment().subtract(1, 'days').format('DD/MM/YYYY')}
+📊 Báo cáo tin tức ngày ${moment().format('DD/MM/YYYY')}
 
 ${analysis}
 
